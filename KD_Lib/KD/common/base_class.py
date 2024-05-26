@@ -1,11 +1,13 @@
 import os
+import time
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
-
+import wandb
+import logging
 
 class BaseClass:
     """
@@ -49,6 +51,8 @@ class BaseClass:
         self.distil_weight = distil_weight
         self.log = log
         self.logdir = logdir
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.INFO)
 
         if self.log:
             self.writer = SummaryWriter(logdir)
@@ -100,13 +104,17 @@ class BaseClass:
 
         print("Training Teacher... ")
 
+        i = 0
+        j = 0
         for ep in range(epochs):
             epoch_loss = 0.0
             correct = 0
+            i +=1
             for (data, label) in self.train_loader:
                 data = data.to(self.device)
                 label = label.to(self.device)
                 out = self.teacher_model(data)
+                j +=1
 
                 if isinstance(out, tuple):
                     out = out[0]
@@ -138,13 +146,15 @@ class BaseClass:
                 self.writer.add_scalar(
                     "Validation accuracy/Teacher", epoch_val_acc, epochs
                 )
-
-            loss_arr.append(epoch_loss)
             print(
                 "Epoch: {}, Loss: {}, Accuracy: {}".format(
                     ep + 1, epoch_loss, epoch_acc
                 )
             )
+            loss_arr.append(epoch_loss)
+            wandb.log({"teacher/epoch": ep, "teacher/loss": epoch_loss, "teacher/trainAccuracy": epoch_acc, "teacher/valAccuracy": epoch_val_acc})
+
+
 
             self.post_epoch_call(ep)
 
@@ -153,6 +163,8 @@ class BaseClass:
             torch.save(self.teacher_model.state_dict(), save_model_pth)
         if plot_losses:
             plt.plot(loss_arr)
+        print(f"I: {i}")
+        print(f"I: {j}")
 
     def _train_student(
         self,
@@ -172,6 +184,7 @@ class BaseClass:
         self.teacher_model.eval()
         self.student_model.train()
         loss_arr = []
+        loss = 0
         length_of_dataset = len(self.train_loader.dataset)
         best_acc = 0.0
         self.best_student_model_weights = deepcopy(self.student_model.state_dict())
@@ -210,7 +223,7 @@ class BaseClass:
 
             epoch_acc = correct / length_of_dataset
 
-            _, epoch_val_acc = self._evaluate_model(self.student_model, verbose=True)
+            _, epoch_val_acc = self._evaluate_model(self.student_model, verbose=True, teacher=False)
 
             if epoch_val_acc > best_acc:
                 best_acc = epoch_val_acc
@@ -232,13 +245,16 @@ class BaseClass:
                 )
             )
 
+            #wandb.logger.log({"Epoch": ep, "Student Loss": epoch_loss, "Student Accuracy": epoch_acc})
+            wandb.log({"student/epoch": ep, "student/loss": epoch_loss, "student/accuracy": epoch_acc, "student/StudentTeacherLoss": loss, "student/valAccuracy": epoch_val_acc})
+
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:
             torch.save(self.student_model.state_dict(), save_model_pth)
         if plot_losses:
             plt.plot(loss_arr)
 
-    def train_student(
+    def     train_student(
         self,
         epochs=10,
         plot_losses=True,
@@ -266,7 +282,7 @@ class BaseClass:
 
         raise NotImplementedError
 
-    def _evaluate_model(self, model, verbose=True):
+    def _evaluate_model(self, model, verbose=True, teacher=False):
         """
         Evaluate the given model's accuaracy over val set.
         For internal use only.
@@ -278,6 +294,7 @@ class BaseClass:
         length_of_dataset = len(self.val_loader.dataset)
         correct = 0
         outputs = []
+        i=0
 
         with torch.no_grad():
             for data, target in self.val_loader:
@@ -291,8 +308,10 @@ class BaseClass:
 
                 pred = output.argmax(dim=1, keepdim=True)
                 correct += pred.eq(target.view_as(pred)).sum().item()
+                i+=1
 
         accuracy = correct / length_of_dataset
+        print(i)
 
         if verbose:
             print("-" * 80)
@@ -309,7 +328,7 @@ class BaseClass:
             model = deepcopy(self.teacher_model).to(self.device)
         else:
             model = deepcopy(self.student_model).to(self.device)
-        _, accuracy = self._evaluate_model(model)
+        _, accuracy = self._evaluate_model(model,teacher)
 
         return accuracy
 

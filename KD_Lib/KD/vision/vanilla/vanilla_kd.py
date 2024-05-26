@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb
 
 from KD_Lib.KD.common import BaseClass
 
@@ -69,5 +70,7 @@ class VanillaKD(BaseClass):
         loss += (self.distil_weight * self.temp * self.temp) * self.loss_fn(
             soft_teacher_out, soft_student_out
         )
+
+        # wandb.log({"KD Softmax Loss": float(loss)})
 
         return loss

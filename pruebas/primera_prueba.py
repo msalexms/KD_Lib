@@ -69,6 +69,7 @@ test_loader = torch.utils.data.DataLoader(
 )
 
 # Initialize teacher and student models
+print(torch.cuda.is_available())
 teacher_model = TeacherModel()
 student_model = StudentModel()
 
@@ -78,7 +79,7 @@ student_optimizer = optim.SGD(student_model.parameters(), lr=0.01)
 
 # Initialize the distiller
 distiller = VanillaKD(teacher_model, student_model, train_loader, test_loader,
-                      teacher_optimizer, student_optimizer)
+                      teacher_optimizer, student_optimizer, device='cuda')
 
 # Train the teacher network
 distiller.train_teacher(epochs=5, plot_losses=True, save_model=True)
