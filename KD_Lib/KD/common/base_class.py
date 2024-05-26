@@ -41,6 +41,7 @@ class BaseClass:
         device="cpu",
         log=False,
         logdir="./Experiments",
+        exp_lr_scheduler=None,
     ):
 
         self.train_loader = train_loader
@@ -52,6 +53,7 @@ class BaseClass:
         self.log = log
         self.logdir = logdir
         self.logger = logging.getLogger(__name__)
+        self.exp_lr_scheduler = exp_lr_scheduler
         logging.basicConfig(level=logging.INFO)
 
         if self.log:
@@ -157,6 +159,7 @@ class BaseClass:
 
 
             self.post_epoch_call(ep)
+            self.exp_lr_scheduler.step()
 
         self.teacher_model.load_state_dict(self.best_teacher_model_weights)
         if save_model:

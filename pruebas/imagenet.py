@@ -3,23 +3,24 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from KD_Lib.KD import VanillaKD, LabelSmoothReg, ProbShift
+from KD_Lib.KD import VanillaKD
 import wandb
 import os
-from CustomDataset import CustomDataset
+from pruebas.data.dataset import CustomDataset
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 learning_rate = 0.001
-batch_size = 768
-epoch_teacher = 150
+batch_size = 128
+epoch_teacher = 200
 epoch_student = 100
 decay = 0.001
 dropout = 0.5
 momentum = 0.9
+lr_decay = 10
 optimizador = "SGD"
-experiment = "ProbShift-IN1"
+experiment = "VanillaKD-IN16"
 
 if True:
     wandb.init(sync_tensorboard=False,
@@ -30,7 +31,7 @@ if True:
                    "kd_method": "VanillaKD",
                    "tensorBoard": False,
                    "learning_rate": learning_rate,
-                   "architecture": "resnet50-18",
+                   "architecture": "resnet50C-18",
                    "dataset": "ImagenetTiny",
                    "epochs": (epoch_teacher, epoch_student),
                    "batch_size": batch_size,
@@ -38,6 +39,7 @@ if True:
                    "regularizacion l2": decay,
                    "dropout": dropout,
                    "momentum": momentum,
+                   "lr_decay": lr_decay,
                }
                )
 
@@ -74,7 +76,7 @@ val_dataset = CustomDataset(root_dir=os.path.join(data_dir, 'val', 'images'),
                             annotations_file=os.path.join(data_dir, 'val', 'val_annotations.txt'),
                             transform=transform,
                             label_map=train_dataset.class_to_idx,
-                            interpolation=True)
+                            interpolation=False)
 print(len(val_dataset.labels))
 
 # Crear los DataLoaders para train, val y test
@@ -115,12 +117,11 @@ class ResNet50(nn.Module):
             nn.Dropout(p=dropout_prob),
             nn.Linear(num_ftrs, classes)
         )
-        self.model.avgpool = nn.AdaptiveAvgPool1d(1)
+        self.model.avgpool = nn.AdaptiveAvgPool2d((1,1))
         print("Resnet50")
 
     def forward(self, x):
         return self.model(x)
-
 
 class ResNet18(nn.Module):
     def __init__(self, chanels, classes):
@@ -142,8 +143,10 @@ student_model = ResNet18(3, len(train_dataset.classes))
 # wandb.watch(teacher_model, log_freq=5, idx=0)
 # wandb.watch(student_model, log_freq=5, idx=1)
 
-teacher_optimizer = optim.SGD(teacher_model.parameters(), lr=learning_rate, weight_decay=decay)
-student_optimizer = optim.SGD(student_model.parameters(), lr=learning_rate, weight_decay=decay)
+teacher_optimizer = optim.SGD(teacher_model.parameters(), lr=learning_rate, weight_decay=decay, momentum=momentum)
+student_optimizer = optim.SGD(student_model.parameters(), lr=learning_rate, weight_decay=decay, momentum=momentum)
+
+lr_sheduler = optim.lr_scheduler.StepLR(teacher_optimizer, step_size=10, gamma=0.1)
 
 # distiller = LabelSmoothReg(teacher_model, student_model, train_loader, test_loader, teacher_optimizer,
 #                            student_optimizer, correct_prob=0.9, device='cuda')
@@ -152,8 +155,8 @@ student_optimizer = optim.SGD(student_model.parameters(), lr=learning_rate, weig
 # distiller.evaluate(teacher=True)                                        # Evaluate the teacher model
 # distiller.evaluate()
 
-distiller = ProbShift(teacher_model, student_model, train_loader, val_loader,
-                      teacher_optimizer, student_optimizer, device='cuda', log=False)
+distiller = VanillaKD(teacher_model, student_model, train_loader, val_loader,
+                      teacher_optimizer, student_optimizer, exp_lr_scheduler=lr_sheduler,device='cuda', log=False )
 
 distiller.train_teacher(epochs=epoch_teacher, plot_losses=False, save_model=True, save_model_pth=f"./models/teacher_{experiment}.pt")
 

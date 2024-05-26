@@ -32,12 +32,14 @@ class VanillaKD(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         loss_fn=nn.MSELoss(),
         temp=20.0,
         distil_weight=0.5,
         device="cpu",
         log=False,
         logdir="./Experiments",
+
     ):
         super(VanillaKD, self).__init__(
             teacher_model,
@@ -52,6 +54,7 @@ class VanillaKD(BaseClass):
             device,
             log,
             logdir,
+            exp_lr_scheduler=exp_lr_scheduler,
         )
 
     def calculate_kd_loss(self, y_pred_student, y_pred_teacher, y_true):
