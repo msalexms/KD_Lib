@@ -1,26 +1,28 @@
+import os
+
 import torch
-import torch.optim as optim
 import torch.nn as nn
+import torch.optim as optim
+import wandb
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
+
 from KD_Lib.KD import VanillaKD
-import wandb
-import os
 from pruebas.data.dataset import CustomDataset
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 learning_rate = 0.001
 batch_size = 128
-epoch_teacher = 200
-epoch_student = 100
+epoch_teacher = 15
+epoch_student = 10
 decay = 0.001
 dropout = 0.5
 momentum = 0.9
 lr_decay = 10
 optimizador = "SGD"
-experiment = "VanillaKD-IN16"
+experiment = "VanillaKD-IN17"
 
 if True:
     wandb.init(sync_tensorboard=False,
@@ -66,7 +68,6 @@ print(f"CLASES: {len(train_dataset.classes)}")
 print(f"CLASES: {train_dataset.classes}")
 print(f"CLASES: {train_dataset.class_to_idx}")
 
-
 test_dataset = datasets.ImageFolder(root=os.path.join(data_dir, 'test'),
                                     transform=transform,
                                     is_valid_file=lambda file: file.lower().endswith('.jpeg'))
@@ -110,18 +111,19 @@ class ResNet50(nn.Module):
             state_dict = torch.load(weights)
             self.model.load_state_dict(state_dict=state_dict)
         # Adjust the first convolutional layer to accept 'channels' input channels
-        self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         num_ftrs = self.model.fc.in_features
         # Add dropout before the final fully connected layer
         self.model.fc = nn.Sequential(
             nn.Dropout(p=dropout_prob),
             nn.Linear(num_ftrs, classes)
         )
-        self.model.avgpool = nn.AdaptiveAvgPool2d((1,1))
+        self.model.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         print("Resnet50")
 
     def forward(self, x):
         return self.model(x)
+
 
 class ResNet18(nn.Module):
     def __init__(self, chanels, classes):
@@ -156,11 +158,13 @@ lr_sheduler = optim.lr_scheduler.StepLR(teacher_optimizer, step_size=10, gamma=0
 # distiller.evaluate()
 
 distiller = VanillaKD(teacher_model, student_model, train_loader, val_loader,
-                      teacher_optimizer, student_optimizer, exp_lr_scheduler=lr_sheduler,device='cuda', log=False )
+                      teacher_optimizer, student_optimizer, exp_lr_scheduler=lr_sheduler, device='cuda', log=False)
 
-distiller.train_teacher(epochs=epoch_teacher, plot_losses=False, save_model=True, save_model_pth=f"./models/teacher_{experiment}.pt")
+distiller.train_teacher(epochs=epoch_teacher, plot_losses=False, save_model=True,
+                        save_model_pth=f"./models/teacher_{experiment}.pt")
 
-distiller.train_student(epochs=epoch_student, plot_losses=False, save_model=True, save_model_pth=f"./models/student_{experiment}.pt")
+distiller.train_student(epochs=epoch_student, plot_losses=False, save_model=True,
+                        save_model_pth=f"./models/student_{experiment}.pt")
 
 distiller.evaluate(teacher=False)
 

@@ -1,6 +1,8 @@
 import wandb
 
-def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, batch_size, optimizador, decay, dropout, momentum, lr_decay):
+
+def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, batch_size, optimizador, decay, dropout,
+                     momentum, lr_decay, interpolation):
     wandb.init(sync_tensorboard=False,
                project='kd',
                entity='gram-uah',
@@ -18,6 +20,7 @@ def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, b
                    "dropout": dropout,
                    "momentum": momentum,
                    "lr_decay": lr_decay,
+                   "interpolation": interpolation,
                }
                )
 
@@ -25,6 +28,7 @@ def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, b
     wandb.define_metric("teacher/*", step_metric="teacher/epoch")
     wandb.define_metric("student/epoch")
     wandb.define_metric("student/*", step_metric="student/epoch")
+
 
 def finish_wandb():
     wandb.finish()
