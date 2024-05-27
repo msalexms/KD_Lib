@@ -85,6 +85,7 @@ class BaseClass:
         plot_losses=True,
         save_model=True,
         save_model_pth="./models/teacher.pt",
+        patience=5
     ):
         """
         Function that will be training the teacher
@@ -105,10 +106,15 @@ class BaseClass:
             os.makedirs(save_dir)
 
         print("Training Teacher... ")
+        epochs_no_improve = 0
+        early_stop = False
 
         i = 0
         j = 0
         for ep in range(epochs):
+            if early_stop:
+                print("Early stopping!")
+                break
             epoch_loss = 0.0
             correct = 0
             i +=1
@@ -141,6 +147,11 @@ class BaseClass:
                 self.best_teacher_model_weights = deepcopy(
                     self.teacher_model.state_dict()
                 )
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+                if epochs_no_improve == patience:
+                    early_stop = True
 
             if self.log:
                 self.writer.add_scalar("Training loss/Teacher", epoch_loss, epochs)
@@ -175,6 +186,7 @@ class BaseClass:
         plot_losses=True,
         save_model=True,
         save_model_pth="./models/student.pt",
+        patience=5
     ):
         """
         Function to train student model - for internal use only.
@@ -197,8 +209,13 @@ class BaseClass:
             os.makedirs(save_dir)
 
         print("Training Student...")
+        epochs_no_improve = 0
+        early_stop = False
 
         for ep in range(epochs):
+            if early_stop:
+                print("Early stopping!")
+                break
             epoch_loss = 0.0
             correct = 0
 
@@ -240,6 +257,11 @@ class BaseClass:
                 self.writer.add_scalar(
                     "Validation accuracy/Student", epoch_val_acc, epochs
                 )
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+                if epochs_no_improve == patience:
+                    early_stop = True
 
             loss_arr.append(epoch_loss)
             print(
@@ -257,7 +279,7 @@ class BaseClass:
         if plot_losses:
             plt.plot(loss_arr)
 
-    def     train_student(
+    def train_student(
         self,
         epochs=10,
         plot_losses=True,
