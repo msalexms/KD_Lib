@@ -32,6 +32,7 @@ class ProbShift(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         loss_fn=nn.KLDivLoss(reduction="batchmean"),
         temp=20.0,
         ka_weight=0.5,
@@ -53,6 +54,7 @@ class ProbShift(BaseClass):
             device=device,
             log=log,
             logdir=logdir,
+            exp_lr_scheduler=exp_lr_scheduler
         )
         self.label_loss = nn.CrossEntropyLoss().to(self.device)
 

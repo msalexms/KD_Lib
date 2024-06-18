@@ -8,9 +8,9 @@ def get_distiller(method, teacher_model, student_model, train_loader, val_loader
                          exp_lr_scheduler=exp_lr_scheduler, device=device)
     elif method == "LabelSmoothReg":
         return LabelSmoothReg(teacher_model, student_model, train_loader, val_loader, teacher_optimizer,
-                              student_optimizer, device=device)
+                              student_optimizer, device=device, exp_lr_scheduler=exp_lr_scheduler)
     elif method == "ProbShift":
         return ProbShift(teacher_model, student_model, train_loader, val_loader, teacher_optimizer, student_optimizer,
-                         device=device)
+                         device=device,exp_lr_scheduler=exp_lr_scheduler)
     else:
         raise ValueError("Unknown distillation method")

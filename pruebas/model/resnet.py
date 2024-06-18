@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
+from collections import OrderedDict
 
 
 class ResNet101(nn.Module):
@@ -24,9 +25,21 @@ class ResNet50(nn.Module):
         else:
             print("Custom Weights")
             self.model = models.resnet50(pretrained=False)
+            self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
             state_dict = torch.load(weights)
-            self.model.load_state_dict(state_dict=state_dict)
-        # Adjust the first convolutional layer to accept 'channels' input channels
+
+            new_state_dict = {}
+            for key, value in state_dict.items():
+                if key.startswith("model."):
+                    new_key = key[len("model."):]  # Eliminar el prefijo "model."
+                    new_state_dict[new_key] = value
+                elif key.startswith("fc.1"):  # Check for fully connected layer keys
+                    new_key = key.replace("fc.1", "fc")  # Replace fc.1 with fc
+                    print(key)
+                    new_state_dict[new_key] = value
+                else:
+                    new_state_dict[key] = value
+            self.model.load_state_dict(OrderedDict(new_state_dict))
         if interpolation:
             self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         else:
@@ -58,6 +71,8 @@ class ResNet18(nn.Module):
             nn.Dropout(p=dropout_prob),
             nn.Linear(num_ftrs, classes)
         )
+        # self.model.fc = nn.Linear(num_ftrs, classes)
+        # self.model.maxpool = nn.Sequential()
         self.model.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         print("Resnet18")
 

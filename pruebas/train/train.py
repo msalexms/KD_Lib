@@ -27,9 +27,9 @@ def train_models(method_name, teacher_model, student_model, train_loader, val_lo
                               student_optimizer, lr_scheduler, device='cuda')
 
     distiller.train_teacher(epochs=epochs_teacher, plot_losses=False, save_model=True,
-                            save_model_pth=f"../models/teacher_{experiment}.pt")
+                            save_model_pth=f"../models/teacher_{experiment}")
     distiller.train_student(epochs=epochs_student, plot_losses=False, save_model=True,
-                            save_model_pth=f"../models/student_{experiment}.pt")
+                            save_model_pth=f"../models/student_{experiment}")
     distiller.evaluate(teacher=False)
     distiller.evaluate(teacher=True)
 

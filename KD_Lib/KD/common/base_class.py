@@ -85,7 +85,7 @@ class BaseClass:
         plot_losses=True,
         save_model=True,
         save_model_pth="./models/teacher.pt",
-        patience=5
+        patience=1000
     ):
         """
         Function that will be training the teacher
@@ -174,7 +174,7 @@ class BaseClass:
 
         self.teacher_model.load_state_dict(self.best_teacher_model_weights)
         if save_model:
-            torch.save(self.teacher_model.state_dict(), save_model_pth)
+            torch.save(self.teacher_model.state_dict(), f"{save_model_pth}_{round(best_acc,2)}.pt")
         if plot_losses:
             plt.plot(loss_arr)
         print(f"I: {i}")
@@ -186,7 +186,7 @@ class BaseClass:
         plot_losses=True,
         save_model=True,
         save_model_pth="./models/student.pt",
-        patience=5
+        patience=1000
     ):
         """
         Function to train student model - for internal use only.
@@ -250,6 +250,12 @@ class BaseClass:
                 self.best_student_model_weights = deepcopy(
                     self.student_model.state_dict()
                 )
+                epochs_no_improve = 0
+
+            else:
+                epochs_no_improve += 1
+            if epochs_no_improve == patience:
+                early_stop = True
 
             if self.log:
                 self.writer.add_scalar("Training loss/Student", epoch_loss, epochs)
@@ -257,11 +263,8 @@ class BaseClass:
                 self.writer.add_scalar(
                     "Validation accuracy/Student", epoch_val_acc, epochs
                 )
-                epochs_no_improve = 0
-            else:
-                epochs_no_improve += 1
-                if epochs_no_improve == patience:
-                    early_stop = True
+
+
 
             loss_arr.append(epoch_loss)
             print(
@@ -275,7 +278,7 @@ class BaseClass:
 
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:
-            torch.save(self.student_model.state_dict(), save_model_pth)
+            torch.save(self.student_model.state_dict(), f"{save_model_pth}_{round(best_acc,2)}.pt")
         if plot_losses:
             plt.plot(loss_arr)
 

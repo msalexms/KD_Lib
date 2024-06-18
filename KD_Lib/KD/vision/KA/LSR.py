@@ -34,6 +34,7 @@ class LabelSmoothReg(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         correct_prob=0.90,
         loss_fn=nn.KLDivLoss(reduction="batchmean"),
         temp=20.0,
@@ -56,6 +57,7 @@ class LabelSmoothReg(BaseClass):
             device=device,
             log=log,
             logdir=logdir,
+            exp_lr_scheduler=exp_lr_scheduler
         )
 
         self.correct_prob = correct_prob

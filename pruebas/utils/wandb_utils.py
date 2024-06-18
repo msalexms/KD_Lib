@@ -2,7 +2,7 @@ import wandb
 
 
 def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, batch_size, optimizador, decay, dropout,
-                     momentum, lr_decay, interpolation):
+                     momentum, lr_decay, interpolation, extra):
     wandb.init(sync_tensorboard=False,
                project='kd',
                entity='gram-uah',
@@ -21,6 +21,7 @@ def initialize_wandb(experiment, learning_rate, architecture, dataset, epochs, b
                    "momentum": momentum,
                    "lr_decay": lr_decay,
                    "interpolation": interpolation,
+                   "extra": extra,
                }
                )
 
