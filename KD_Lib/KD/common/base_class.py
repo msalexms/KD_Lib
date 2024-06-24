@@ -275,6 +275,7 @@ class BaseClass:
 
             #wandb.logger.log({"Epoch": ep, "Student Loss": epoch_loss, "Student Accuracy": epoch_acc})
             wandb.log({"student/epoch": ep, "student/loss": epoch_loss, "student/accuracy": epoch_acc, "student/StudentTeacherLoss": loss, "student/valAccuracy": epoch_val_acc})
+            self.exp_lr_scheduler.step()
 
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:

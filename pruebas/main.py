@@ -5,32 +5,33 @@ from data.transforms import *
 from model.resnet import ResNet50, ResNet18
 from train.train import train_models
 from utils.wandb_utils import initialize_wandb, finish_wandb
+from KD_Lib.models import ResNet18 as ResNet18KD
 
 # https://github.com/tjmoon0104/Tiny-ImageNet-Classifier/blob/master/ResNet18_224.ipynb
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 data_dir = 'tiny-imagenet-200/'
-learning_rate = 0.003
+learning_rate = 0.1
 arquitectira = "resnet50-18ndropout"
 dataset = "ImagenetTiny-normal"
-batch_size = 128
+batch_size = 64
 interpolation = False
-epoch_teacher = 20
+epoch_teacher = 0
 epoch_student = 200
 decay = 0.0001
 dropout = 0.3
 momentum = 0.9
 lr_decay = 10
 optimizador = "SGD"
-number = 53
-method_name = "ProbShift"
+number = 76
+method_name = "VirtualTeacher"
 experiment = f"{method_name}-IN{number}"
 extra = "Trasnform normal - Transform normal"
 
 
 initialize_wandb(experiment, learning_rate, arquitectira , dataset, (epoch_teacher, epoch_student),
-                 batch_size, optimizador, decay, dropout, momentum, lr_decay, interpolation, extra)
+                batch_size, optimizador, decay, dropout, momentum, lr_decay, interpolation, extra)
 print("Parámetros:")
 print(f"data_dir: {data_dir}")
 print(f"learning_rate: {learning_rate}")
@@ -52,10 +53,12 @@ print(f"dataset: {dataset}")
 transform = get_transform_tensor_normalize()
 train_loader, val_loader, test_loader = get_data_loaders(data_dir, batch_size, transform, interpolation=interpolation)
 
-teacher_model = ResNet50(3, len(train_loader.dataset.classes), pretrained=True, dropout_prob=dropout, interpolation=interpolation,
+teacher_model = ResNet50(3, len(train_loader.dataset.classes), pretrained=False, dropout_prob=dropout, interpolation=interpolation,
                          weights="../models/teacher_VanillaKD-IN33_0.74.pt")
 
 student_model = ResNet18(3, len(train_loader.dataset.classes), dropout_prob=dropout, interpolation=interpolation)
+# teacher_model = ResNet18KD(parameters= [64, 128, 256, 512, 512],num_channel=3, num_classes=len(train_loader.dataset.classes), mean=True)
+# student_model = ResNet18KD(parameters= [64, 128, 256, 512, 512],num_channel=3, num_classes=len(train_loader.dataset.classes), mean=True)
 
 distiller = train_models(method_name=method_name, teacher_model=teacher_model, student_model=student_model,
                          train_loader=train_loader,

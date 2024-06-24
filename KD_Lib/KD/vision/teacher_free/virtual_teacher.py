@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 
 class VirtualTeacher:
@@ -33,6 +34,7 @@ class VirtualTeacher:
         train_loader,
         val_loader,
         optimizer_student,
+        exp_lr_scheduler,
         loss_fn=nn.KLDivLoss(),
         correct_prob=0.9,
         temp=10.0,
@@ -52,6 +54,7 @@ class VirtualTeacher:
         self.distil_weight = distil_weight
         self.log = log
         self.logdir = logdir
+        self.exp_lr_scheduler = exp_lr_scheduler
 
         if self.log:
             self.writer = SummaryWriter(logdir)
@@ -88,6 +91,7 @@ class VirtualTeacher:
         self.best_student_model_weights = deepcopy(self.student_model.state_dict())
 
         print("\nTraining student...")
+        self.student_model.to(self.device)
 
         for ep in range(epochs):
             epoch_loss = 0.0
@@ -133,6 +137,9 @@ class VirtualTeacher:
 
             loss_arr.append(epoch_loss)
             print(f"Epoch: {ep+1}, Loss: {epoch_loss}, Accuracy: {epoch_acc}")
+            wandb.log({"student/epoch": ep, "student/loss": epoch_loss, "student/accuracy": epoch_acc,
+                       "student/StudentTeacherLoss": loss, "student/valAccuracy": epoch_val_acc})
+            self.exp_lr_scheduler.step()
 
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:

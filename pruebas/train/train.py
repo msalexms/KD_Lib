@@ -21,12 +21,12 @@ def train_models(method_name, teacher_model, student_model, train_loader, val_lo
     teacher_optimizer = get_optimizer(optimizer_name, teacher_model.parameters(), learning_rate, decay, momentum)
     student_optimizer = get_optimizer(optimizer_name, student_model.parameters(), learning_rate, decay, momentum)
 
-    lr_scheduler = optim.lr_scheduler.StepLR(teacher_optimizer, step_size=lr_decay, gamma=0.1)
+    lr_scheduler = optim.lr_scheduler.StepLR(student_optimizer, step_size=lr_decay, gamma=0.1)
 
     distiller = get_distiller(method_name, teacher_model, student_model, train_loader, val_loader, teacher_optimizer,
                               student_optimizer, lr_scheduler, device='cuda')
-
-    distiller.train_teacher(epochs=epochs_teacher, plot_losses=False, save_model=True,
+    if method_name != "VirtualTeacher":
+        distiller.train_teacher(epochs=epochs_teacher, plot_losses=False, save_model=True,
                             save_model_pth=f"../models/teacher_{experiment}")
     distiller.train_student(epochs=epochs_student, plot_losses=False, save_model=True,
                             save_model_pth=f"../models/student_{experiment}")

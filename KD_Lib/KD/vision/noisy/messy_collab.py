@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb
 
 from KD_Lib.KD.common import BaseClass
 
@@ -141,6 +142,8 @@ class MessyCollab(BaseClass):
 
             loss_arr.append(epoch_loss)
             print(f"Epoch: {ep+1}, Loss: {epoch_loss}, Accuracy: {epoch_acc}")
+            wandb.log({"teacher/epoch": ep, "teacher/loss": epoch_loss, "teacher/trainAccuracy": epoch_acc,
+                       "teacher/valAccuracy": epoch_val_acc})
 
             self.post_epoch_call(ep)
 
@@ -235,11 +238,15 @@ class MessyCollab(BaseClass):
             loss_arr.append(epoch_loss)
             print(f"Epoch: {ep+1}, Loss: {epoch_loss}, Accuracy: {epoch_acc}")
 
+            wandb.log({"student/epoch": ep, "student/loss": epoch_loss, "student/accuracy": epoch_acc,
+                   "student/StudentTeacherLoss": loss, "student/valAccuracy": epoch_val_acc})
+
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:
             torch.save(self.student_model.state_dict(), save_model_pth)
         if plot_losses:
             plt.plot(loss_arr)
+
 
     def calculate_kd_loss(self, y_pred_student, y_pred_teacher, y_true):
         """

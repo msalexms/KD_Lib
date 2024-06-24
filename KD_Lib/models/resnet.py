@@ -130,10 +130,10 @@ class ResnetWithAT(ResNet):
 
 class MeanResnet(ResNet):
     def __init__(self, block, num_blocks, params, num_channel=3, num_classes=10):
-        super(MeanResnet, self).__init__(
-            block, num_blocks, params, num_channel, num_classes
-        )
-        self.linear2 = nn.Linear(params[4] * block.expansion, num_classes)
+        super(MeanResnet, self).__init__(block, num_blocks, params, num_channel, num_classes)
+        # Ajustamos las capas lineales para aceptar 2048 características de entrada
+        self.linear = nn.Linear(2048, num_classes)
+        self.linear2 = nn.Linear(2048, num_classes)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -144,8 +144,14 @@ class MeanResnet(ResNet):
         out = self.layer3(out)
         out = self.layer4(out)
         out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        return self.linear(out), self.linear2(out)
+        out = out.view(out.size(0), -1)  # Aplana la salida para la capa lineal
+
+        #print(f"Output shape before linear layers: {out.shape}")  # Añade este mensaje de depuración
+
+        out1 = self.linear(out)
+        out2 = self.linear2(out)
+
+        return out1, out2
 
 
 def ResNet18(parameters, num_channel=3, num_classes=10, att=False, mean=False):

@@ -20,26 +20,8 @@ class ResNet50(nn.Module):
     def __init__(self, channels, classes, pretrained, dropout_prob=0.5, weights="../weights/resnet50-11ad3fa6.pth",
                  interpolation=False):
         super(ResNet50, self).__init__()
-        if pretrained:
-            self.model = models.resnet50(pretrained=True)
-        else:
-            print("Custom Weights")
-            self.model = models.resnet50(pretrained=False)
-            self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-            state_dict = torch.load(weights)
+        self.model = models.resnet50(pretrained=True)
 
-            new_state_dict = {}
-            for key, value in state_dict.items():
-                if key.startswith("model."):
-                    new_key = key[len("model."):]  # Eliminar el prefijo "model."
-                    new_state_dict[new_key] = value
-                elif key.startswith("fc.1"):  # Check for fully connected layer keys
-                    new_key = key.replace("fc.1", "fc")  # Replace fc.1 with fc
-                    print(key)
-                    new_state_dict[new_key] = value
-                else:
-                    new_state_dict[key] = value
-            self.model.load_state_dict(OrderedDict(new_state_dict))
         if interpolation:
             self.model.conv1 = nn.Conv2d(channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         else:
@@ -51,6 +33,23 @@ class ResNet50(nn.Module):
             nn.Linear(num_ftrs, classes)
         )
         self.model.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        if not pretrained:
+            print("Custom weights loaded")
+            state_dict = torch.load(weights)
+
+            new_state_dict = {}
+            for key, value in state_dict.items():
+                if key.startswith("model."):
+                    new_key = key[len("model."):]  # Eliminar el prefijo "model."
+
+                    # if new_key.startswith("fc.1"):  # Check for fully connected layer keys
+                    #     new_key = new_key.replace("fc.1", "fc")  # Replace fc.1 with fc
+                    #     print("Detectado f1.c")
+                    #     print(new_key)
+                    new_state_dict[new_key] = value
+                else:
+                    new_state_dict[key] = value
+            self.model.load_state_dict(OrderedDict(new_state_dict))
         print("Resnet50")
 
     def forward(self, x):

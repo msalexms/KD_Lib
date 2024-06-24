@@ -42,6 +42,7 @@ class MeanTeacher(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         loss_fn=nn.MSELoss(),
         class_loss=nn.CrossEntropyLoss(),
         res_loss=symmetric_mse_loss,
@@ -64,6 +65,7 @@ class MeanTeacher(BaseClass):
             device,
             log,
             logdir,
+            exp_lr_scheduler=exp_lr_scheduler
         )
         self.class_loss = class_loss.to(self.device)
         try:
@@ -87,8 +89,8 @@ class MeanTeacher(BaseClass):
         num_classes = consis_logit.size()[1]
         res_loss = self.res_loss(class_logit, consis_logit) / num_classes
 
-        student_softmax = self.log_softmax(consis_logit, dim=1)
-        teacher_softmax = self.log_softmax(y_pred_teacher[0], dim=1)
+        student_softmax = self.log_softmax(consis_logit)
+        teacher_softmax = self.log_softmax(y_pred_teacher[0])
         consis_loss = self.loss_fn(student_softmax, teacher_softmax) / num_classes
 
         return class_loss + res_loss + consis_loss

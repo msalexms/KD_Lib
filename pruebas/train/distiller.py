@@ -1,4 +1,4 @@
-from KD_Lib.KD import VanillaKD, LabelSmoothReg, ProbShift
+from KD_Lib.KD import VanillaKD, LabelSmoothReg, ProbShift, MessyCollab, MeanTeacher, VirtualTeacher
 
 
 def get_distiller(method, teacher_model, student_model, train_loader, val_loader, teacher_optimizer, student_optimizer,
@@ -12,5 +12,15 @@ def get_distiller(method, teacher_model, student_model, train_loader, val_loader
     elif method == "ProbShift":
         return ProbShift(teacher_model, student_model, train_loader, val_loader, teacher_optimizer, student_optimizer,
                          device=device,exp_lr_scheduler=exp_lr_scheduler)
+    elif method == "MessyCollab":
+        return MessyCollab(teacher_model, student_model, train_loader, val_loader, teacher_optimizer, student_optimizer, device=device)
+    elif method == "MeanTeacher":
+        return MeanTeacher(teacher_model, student_model, train_loader, val_loader, teacher_optimizer, student_optimizer,
+                           exp_lr_scheduler=exp_lr_scheduler, device=device)
+    elif method == "NoisyTeacher":
+        print()
+    elif method == "VirtualTeacher":
+        return VirtualTeacher(student_model, train_loader, val_loader, student_optimizer, exp_lr_scheduler, device=device)
+
     else:
         raise ValueError("Unknown distillation method")
