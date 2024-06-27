@@ -10,14 +10,14 @@ from train.train import train_models
 import wandb
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 batch_size = 128
 epochs = 200
 learning_rate = 0.001
 dropout = 0.3
 data_dir = 'tiny-imagenet-200/'
-experiment = 'resnet18-2'
+experiment = 'resnet18-3'
 criterion = nn.CrossEntropyLoss()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")

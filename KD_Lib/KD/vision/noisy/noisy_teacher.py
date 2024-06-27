@@ -40,6 +40,7 @@ class NoisyTeacher(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         alpha=0.5,
         noise_variance=0.1,
         loss_fn=nn.MSELoss(),
@@ -62,6 +63,7 @@ class NoisyTeacher(BaseClass):
             device,
             log,
             logdir,
+            exp_lr_scheduler=exp_lr_scheduler,
         )
 
         self.alpha = alpha

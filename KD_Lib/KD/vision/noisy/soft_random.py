@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import wandb
 
 from KD_Lib.KD.common import BaseClass
 
@@ -39,6 +40,7 @@ class SoftRandom(BaseClass):
         val_loader,
         optimizer_teacher,
         optimizer_student,
+        exp_lr_scheduler,
         noise_variance=0.1,
         loss_fn=nn.KLDivLoss(),
         temp=20.0,
@@ -60,6 +62,7 @@ class SoftRandom(BaseClass):
             device,
             log,
             logdir,
+            exp_lr_scheduler=exp_lr_scheduler,
         )
 
         self.noise_variance = noise_variance
@@ -134,6 +137,9 @@ class SoftRandom(BaseClass):
 
             loss_arr.append(epoch_loss)
             print(f"Epoch: {ep+1}, Loss: {epoch_loss}, Accuracy: {epoch_acc}")
+            wandb.log({"student/epoch": ep, "student/loss": epoch_loss, "student/accuracy": epoch_acc,
+                       "student/StudentTeacherLoss": loss, "student/valAccuracy": epoch_val_acc})
+            self.exp_lr_scheduler.step()
 
         self.student_model.load_state_dict(self.best_student_model_weights)
         if save_model:
